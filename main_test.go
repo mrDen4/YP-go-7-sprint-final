@@ -60,13 +60,17 @@ func TestCafeCount(t *testing.T) {
 		{0, 0},
 		{1, 1},
 		{2, 2},
-		{100, len(cafeList["moscow"])},
+		{100, min(100, len(cafeList["moscow"]))},
 	}
 
 	for _, v := range requests {
 		response := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?count=%d&city=moscow", v.count), nil)
 		handler.ServeHTTP(response, req)
+
+		if response.Code != http.StatusOK {
+			t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
+		}
 
 		countCafe := strings.Split(response.Body.String(), ",")
 		count := len(countCafe)
@@ -95,12 +99,23 @@ func TestCafeSearch(t *testing.T) {
 		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?city=moscow&%s", v.search), nil)
 		handler.ServeHTTP(response, req)
 
+		if response.Code != http.StatusOK {
+			t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
+		}
+
+		searchValue := strings.TrimPrefix(v.search, "search=")
+		isNameCafe := strings.Contains(
+			strings.ToLower(response.Body.String()),
+			strings.ToLower(searchValue))
+		if !isNameCafe && v.wantCount > 0 {
+			t.Fatal("Данного кафе нет в списке")
+		}
 		countCafe := strings.Split(response.Body.String(), ",")
 		count := len(countCafe)
 		if countCafe[0] == "" && count == 1 {
 			count = 0
 		}
-		// fmt.Println(countCafe, len(countCafe))
 		assert.Equal(t, v.wantCount, count)
+
 	}
 }
