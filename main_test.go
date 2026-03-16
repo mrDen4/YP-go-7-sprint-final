@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCafeNegative(t *testing.T) {
@@ -68,9 +69,7 @@ func TestCafeCount(t *testing.T) {
 		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?count=%d&city=moscow", v.count), nil)
 		handler.ServeHTTP(response, req)
 
-		if response.Code != http.StatusOK {
-			t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
-		}
+		require.Equal(t, http.StatusOK, response.Code)
 
 		countCafe := strings.Split(response.Body.String(), ",")
 		count := len(countCafe)
@@ -99,17 +98,16 @@ func TestCafeSearch(t *testing.T) {
 		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?city=moscow&%s", v.search), nil)
 		handler.ServeHTTP(response, req)
 
-		if response.Code != http.StatusOK {
-			t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
-		}
+		require.Equal(t, http.StatusOK, response.Code)
 
 		searchValue := strings.TrimPrefix(v.search, "search=")
-		isNameCafe := strings.Contains(
-			strings.ToLower(response.Body.String()),
-			strings.ToLower(searchValue))
-		if !isNameCafe && v.wantCount > 0 {
-			t.Fatal("Данного кафе нет в списке")
+		if v.wantCount > 0 {
+			assert.Contains(
+				t,
+				strings.ToLower(response.Body.String()),
+				strings.ToLower(searchValue))
 		}
+
 		countCafe := strings.Split(response.Body.String(), ",")
 		count := len(countCafe)
 		if countCafe[0] == "" && count == 1 {
